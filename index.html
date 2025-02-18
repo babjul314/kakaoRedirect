@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카카오톡 외부 브라우저로 열기 및 공유</title>
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            outline: none;
+            box-sizing: border-box; /* 박스 크기 초과 방지 */
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            color: white;
+            background-color: #ffcd00;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-sizing: border-box; /* 버튼도 범위 초과 방지 */
+        }
+        button:hover {
+            background-color: #e4b000;
+        }
+    </style>
+    <script>
+        // 카카오 API 키 초기화
+        Kakao.init('6b863c8af76f37de572198ef4f17da2d');
+
+        // 카카오톡 인앱 브라우저 감지
+        function isKakaoTalkInApp() {
+            const ua = navigator.userAgent.toLowerCase();
+            return ua.indexOf("kakaotalk") !== -1;
+        }
+
+        // 외부 브라우저에서 열기
+        function openInExternalBrowser(url) {
+            if (isKakaoTalkInApp()) {
+                // iOS (Safari)에서 열기
+                if (navigator.userAgent.match(/iphone|ipad|ipod/i)) {
+                    window.location.href = "kakaoweb://url=" + encodeURIComponent(url);
+                } else {
+                    // Android (Chrome)에서 열기
+                    window.location.href = "intent://" + url.replace(/^https?:\/\//, '') + "#Intent;scheme=https;package=com.android.chrome;end;";
+                }
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        // 카카오톡 공유하기 기능
+        function shareOnKakao() {
+            const inputUrl = document.getElementById('urlInput').value.trim();
+            if (!inputUrl) {
+                alert("공유할 주소를 입력하세요.");
+                return;
+            }
+
+            Kakao.Share.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: '링크 공유',
+                    description: '아래 링크를 확인하세요!',
+                    imageUrl: 'https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png',
+                    link: {
+                        mobileWebUrl: inputUrl,
+                        webUrl: inputUrl
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const url = urlParams.get('url');
+
+        if (url) {
+            openInExternalBrowser(url);
+        } else {
+            document.write(`
+                <div class="container">
+                    <h2>주소 입력 후 카카오 공유하기</h2>
+                    <input type="text" id="urlInput" placeholder="공유할 주소 입력">
+                    <button onclick="shareOnKakao()">카카오 공유하기</button>
+                </div>
+            `);
+        }
+    </script>
+</body>
+</html>

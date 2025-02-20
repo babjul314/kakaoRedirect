@@ -59,6 +59,12 @@
         // 카카오 API 초기화
         Kakao.init('9d2b87f36ba44bb72755d50675fce241');
 
+        // 카카오 인앱 브라우저 감지
+        function isKakaoTalkInApp() {
+            const ua = navigator.userAgent.toLowerCase();
+            return ua.includes("kakaotalk");
+        }
+
         // URL에서 메타 데이터를 가져오는 함수
         async function fetchMetaData(url) {
             try {
@@ -104,6 +110,7 @@
             }
 
             const metaData = await fetchMetaData(inputUrl);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?url=${encodeURIComponent(inputUrl)}`;
 
             Kakao.Share.sendDefault({
                 objectType: 'feed',
@@ -112,8 +119,8 @@
                     description: metaData.description,
                     imageUrl: metaData.imageUrl,
                     link: {
-                        mobileWebUrl: inputUrl,
-                        webUrl: inputUrl
+                        mobileWebUrl: shareUrl,
+                        webUrl: shareUrl
                     }
                 }
             });
@@ -128,24 +135,28 @@
         // 외부 브라우저에서 열기
         function openInExternalBrowser(url) {
             if (!url) return;
-            
-            const ua = navigator.userAgent.toLowerCase();
-            if (ua.includes("kakaotalk")) {
-                if (navigator.userAgent.match(/iphone|ipad|ipod/i)) {
-                    window.location.href = "kakaoweb://url=" + encodeURIComponent(url);
-                } else {
-                    window.location.href = "intent://" + url.replace(/^https?:\/\//, '') + "#Intent;scheme=https;package=com.android.chrome;end;";
-                }
+
+            if (isKakaoTalkInApp()) {
+                // 카카오톡 인앱 브라우저에서 외부 브라우저로 리다이렉트
+                setTimeout(() => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }, 100);
             } else {
                 window.location.href = url;
             }
         }
 
-        // 페이지 로드 시 URL이 있으면 외부 브라우저에서 열기
+        // 공유된 링크가 있는 경우 리다이렉트
         window.onload = function () {
-            const url = getUrlParameter('url');
-            if (url) {
-                openInExternalBrowser(url);
+            const sharedUrl = getUrlParameter('url');
+            if (sharedUrl) {
+                openInExternalBrowser(sharedUrl);
             }
         };
     </script>

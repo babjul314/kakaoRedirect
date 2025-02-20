@@ -115,7 +115,7 @@
             }
 
             const metaData = await fetchMetaData(inputUrl);
-            const redirectUrl = `'kakaotalk://web/openExternal?url=' + encodeURIComponent(${sharedUrl});`;
+            const redirectUrl = `'kakaotalk://web/openExternal?url=' + encodeURIComponent(${inputUrl});`;
 
             Kakao.Share.sendDefault({
                 objectType: 'feed',

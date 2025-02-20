@@ -74,7 +74,7 @@
 
         // 유튜브 링크를 유튜브 앱에서 실행
         function openYouTubeApp(url) {
-            const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/);
+            let videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([^&?/]+)/);
             if (!videoIdMatch) {
                 openInExternalBrowser(url);
                 return;
@@ -85,15 +85,13 @@
             const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
             if (isIOS()) {
-                window.open(`googlechrome://${youtubeWebUrl.replace(/^https?:\/\//, '')}`, '_blank');
                 setTimeout(() => {
                     window.location.href = youtubeAppUrl;
-                }, 1500);
+                }, 1000);
             } else if (isAndroid()) {
-                window.open(`intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.android.chrome;scheme=https;end;`, '_blank');
                 setTimeout(() => {
                     window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
-                }, 1500);
+                }, 1000);
             } else {
                 openInExternalBrowser(youtubeWebUrl);
             }
@@ -104,17 +102,24 @@
             if (!url) return;
 
             if (isKakaoTalkInApp()) {
-                setTimeout(() => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }, 100);
+                if (isIOS()) {
+                    // iOS → Safari에서 열기
+                    setTimeout(() => {
+                        window.location.href = `googlechrome://${url.replace(/^https?:\/\//, '')}`;
+                    }, 500);
+                } else if (isAndroid()) {
+                    // Android → Chrome에서 열기
+                    setTimeout(() => {
+                        window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
+                    }, 500);
+                }
             } else {
-                window.location.href = url;
+                window.open(url, '_blank');
+            }
+
+            // 유튜브 링크라면 앱 실행 시도
+            if (url.includes('youtu.be') || url.includes('youtube.com')) {
+                openYouTubeApp(url);
             }
         }
 
@@ -124,11 +129,7 @@
             const sharedUrl = urlParams.get('url');
 
             if (sharedUrl) {
-                if (sharedUrl.includes('youtu.be') || sharedUrl.includes('youtube.com')) {
-                    openYouTubeApp(sharedUrl);
-                } else {
-                    openInExternalBrowser(sharedUrl);
-                }
+                openInExternalBrowser(sharedUrl);
             }
         };
 

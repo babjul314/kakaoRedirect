@@ -94,13 +94,15 @@
         function openInExternalBrowser(url) {
             if (!url) return;
 
+            let browserUrl = url;
+
             if (isIOS()) {
-                window.location.href = `googlechrome://${url.replace(/^https?:\/\//, '')}`;
+                browserUrl = `googlechrome://${url.replace(/^https?:\/\//, '')}`;
             } else if (isAndroid()) {
-                window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
-            } else {
-                window.open(url, '_blank');
+                browserUrl = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
             }
+
+            window.location.href = browserUrl;
 
             if (url.includes('youtu.be') || url.includes('youtube.com')) {
                 openYouTubeApp(url);
@@ -149,7 +151,14 @@
             }
 
             const metaData = await fetchMetaData(inputUrl);
-            const shareUrl = `${window.location.origin}${window.location.pathname}?url=${encodeURIComponent(inputUrl)}`;
+            let shareUrl = `${window.location.origin}${window.location.pathname}?url=${encodeURIComponent(inputUrl)}`;
+
+            // 크롬/사파리 강제 실행을 위한 URL 수정
+            if (isIOS()) {
+                shareUrl = `googlechrome://${shareUrl.replace(/^https?:\/\//, '')}`;
+            } else if (isAndroid()) {
+                shareUrl = `intent://${shareUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
+            }
 
             Kakao.Share.sendDefault({
                 objectType: 'feed',

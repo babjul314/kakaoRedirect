@@ -59,11 +59,6 @@
         // 카카오 API 초기화
         Kakao.init('9d2b87f36ba44bb72755d50675fce241');
 
-        // iOS, Android, 카카오톡 인앱브라우저 감지
-        function isKakaoTalkInApp() {
-            return /kakaotalk/i.test(navigator.userAgent);
-        }
-
         function isIOS() {
             return /iphone|ipad|ipod/i.test(navigator.userAgent);
         }
@@ -72,11 +67,11 @@
             return /android/i.test(navigator.userAgent);
         }
 
-        // 유튜브 링크를 유튜브 앱에서 실행
+        // 유튜브 링크 감지 후 앱에서 열기
         function openYouTubeApp(url) {
-            let videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([^&?/]+)/);
+            const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([^&?/]+)/);
             if (!videoIdMatch) {
-                openInExternalBrowser(url);
+                window.open(url, '_blank');
                 return;
             }
 
@@ -85,45 +80,34 @@
             const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
             if (isIOS()) {
-                setTimeout(() => {
-                    window.location.href = youtubeAppUrl;
-                }, 1000);
+                setTimeout(() => { window.location.href = youtubeAppUrl; }, 1000);
             } else if (isAndroid()) {
                 setTimeout(() => {
                     window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
                 }, 1000);
             } else {
-                openInExternalBrowser(youtubeWebUrl);
+                window.open(youtubeWebUrl, '_blank');
             }
         }
 
-        // 외부 브라우저에서 열기 (카카오톡 웹뷰 차단)
+        // 외부 브라우저에서 열기 (크롬/사파리 강제 실행)
         function openInExternalBrowser(url) {
             if (!url) return;
 
-            if (isKakaoTalkInApp()) {
-                if (isIOS()) {
-                    // iOS → Safari에서 열기
-                    setTimeout(() => {
-                        window.location.href = `googlechrome://${url.replace(/^https?:\/\//, '')}`;
-                    }, 500);
-                } else if (isAndroid()) {
-                    // Android → Chrome에서 열기
-                    setTimeout(() => {
-                        window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
-                    }, 500);
-                }
+            if (isIOS()) {
+                window.location.href = `googlechrome://${url.replace(/^https?:\/\//, '')}`;
+            } else if (isAndroid()) {
+                window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
             } else {
                 window.open(url, '_blank');
             }
 
-            // 유튜브 링크라면 앱 실행 시도
             if (url.includes('youtu.be') || url.includes('youtube.com')) {
                 openYouTubeApp(url);
             }
         }
 
-        // 공유된 링크가 있는 경우 강제 리디렉트
+        // 공유된 링크가 있는 경우 크롬/사파리에서 열기
         window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
             const sharedUrl = urlParams.get('url');
@@ -133,39 +117,26 @@
             }
         };
 
-        // 메타데이터 가져오기
+        // 메타데이터 가져오기 (썸네일, 제목, 설명)
         async function fetchMetaData(url) {
             try {
                 let data;
-
-                // 유튜브 URL 처리
                 if (url.includes('youtu.be') || url.includes('youtube.com')) {
                     const apiUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
                     const response = await fetch(apiUrl);
                     data = await response.json();
-                    return {
-                        title: data.title,
-                        description: "유튜브 동영상입니다.",
-                        imageUrl: data.thumbnail_url
-                    };
+                    return { title: data.title, description: "유튜브 동영상입니다.", imageUrl: data.thumbnail_url };
                 }
 
-                // 일반 URL 처리
                 const response = await fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`);
                 data = await response.json();
-
                 return {
                     title: data.title || "공유된 링크",
                     description: data.description || "자세한 내용을 확인하세요!",
-                    imageUrl: data.images && data.images.length > 0 ? data.images[0] : "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
+                    imageUrl: data.images?.length > 0 ? data.images[0] : "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
                 };
             } catch (error) {
-                console.error("메타 데이터 로드 실패:", error);
-                return {
-                    title: "공유된 링크",
-                    description: "자세한 내용을 확인하세요!",
-                    imageUrl: "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
-                };
+                return { title: "공유된 링크", description: "자세한 내용을 확인하세요!", imageUrl: "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png" };
             }
         }
 

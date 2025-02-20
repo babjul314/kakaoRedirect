@@ -174,13 +174,15 @@
             }
 
             if (isKakaoTalkInApp()) {
-                if (isIOS()) {
-                    setTimeout(() => {
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                    }, 100);
-                } else if (isAndroid()) {
-                    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
-                }
+                setTimeout(() => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }, 100);
             } else {
                 window.open(url, '_blank');
             }

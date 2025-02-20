@@ -126,7 +126,7 @@
                 if (url.includes('chat.openai.com')) {
                     return {
                         title: "ChatGPT 대화 링크",
-                        description: "자세히 보기에 사이트 열기",
+                        description: url,
                         imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg"
                     };
                 }
@@ -137,7 +137,7 @@
                     const data = await response.json();
                     return {
                         title: data.title,
-                        description: "자세히 보기에 사이트 열기",
+                        description: url,
                         imageUrl: data.thumbnail_url
                     };
                 }
@@ -151,7 +151,7 @@
 
                 return {
                     title: data.title || extractDomain(url),
-                    description: "자세히 보기에 사이트 열기",
+                    description: "",
                     imageUrl: data.images && data.images.length > 0 ? data.images[0] : "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
                 };
             } catch (error) {

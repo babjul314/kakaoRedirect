@@ -74,41 +74,60 @@
             return /android/i.test(navigator.userAgent);
         }
 
-        // URL에서 메타 데이터를 가져오는 함수
-        async function fetchMetaData(url) {
-            try {
-                let data;
+        // 유튜브 링크를 유튜브 앱에서 실행
+        function openYouTubeInApp(url) {
+            const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/);
+            if (!videoId) {
+                openInExternalBrowser(url);
+                return;
+            }
 
-                // 유튜브 URL이면 oEmbed API 사용
-                if (url.includes('youtu.be') || url.includes('youtube.com')) {
-                    const apiUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-                    const response = await fetch(apiUrl);
-                    data = await response.json();
-                    return {
-                        title: data.title,
-                        description: "유튜브 동영상입니다.",
-                        imageUrl: data.thumbnail_url
-                    };
-                }
+            const youtubeAppUrl = `youtube://watch?v=${videoId[1]}`;
+            const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId[1]}`;
 
-                // 그 외의 URL은 JSONLink API 사용
-                const response = await fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`);
-                data = await response.json();
-
-                return {
-                    title: data.title || "공유된 링크",
-                    description: data.description || "자세한 내용을 확인하세요!",
-                    imageUrl: data.images && data.images.length > 0 ? data.images[0] : "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
-                };
-            } catch (error) {
-                console.error("메타 데이터 로드 실패:", error);
-                return {
-                    title: "공유된 링크",
-                    description: "자세한 내용을 확인하세요!",
-                    imageUrl: "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png"
-                };
+            if (isIOS()) {
+                window.open(`googlechrome://${youtubeWebUrl.replace(/^https?:\/\//, '')}`, '_blank');
+                setTimeout(() => {
+                    window.location.href = youtubeAppUrl;
+                }, 1000);
+            } else if (isAndroid()) {
+                window.open(`intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.android.chrome;scheme=https;end;`, '_blank');
+                setTimeout(() => {
+                    window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
+                }, 1000);
+            } else {
+                openInExternalBrowser(youtubeWebUrl);
             }
         }
+
+        // 외부 브라우저에서 열기
+        function openInExternalBrowser(url) {
+            if (!url) return;
+
+            if (isKakaoTalkInApp()) {
+                if (isIOS()) {
+                    window.open(`googlechrome://${url.replace(/^https?:\/\//, '')}`, '_blank');
+                } else if (isAndroid()) {
+                    window.open(`intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`, '_blank');
+                }
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        // 공유된 링크가 있는 경우 강제 리디렉트
+        window.onload = function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedUrl = urlParams.get('url');
+
+            if (sharedUrl) {
+                if (sharedUrl.includes('youtu.be') || sharedUrl.includes('youtube.com')) {
+                    openYouTubeInApp(sharedUrl);
+                } else {
+                    openInExternalBrowser(sharedUrl);
+                }
+            }
+        };
 
         // 카카오톡 공유 기능
         async function shareOnKakao() {
@@ -118,15 +137,14 @@
                 return;
             }
 
-            const metaData = await fetchMetaData(inputUrl);
             const shareUrl = `${window.location.origin}${window.location.pathname}?url=${encodeURIComponent(inputUrl)}`;
 
             Kakao.Share.sendDefault({
                 objectType: 'feed',
                 content: {
-                    title: metaData.title,
-                    description: metaData.description,
-                    imageUrl: metaData.imageUrl,
+                    title: "공유된 링크",
+                    description: "자세한 내용을 확인하세요!",
+                    imageUrl: "https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_og_img.png",
                     link: {
                         mobileWebUrl: shareUrl,
                         webUrl: shareUrl
@@ -134,68 +152,11 @@
                 }
             });
         }
-
-        // URL 파라미터 가져오기
-        function getUrlParameter(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // 유튜브 링크를 유튜브 앱에서 열기
-        function openYouTubeApp(url) {
-            const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/);
-            if (!videoId) {
-                window.open(url, '_blank');
-                return;
-            }
-
-            const youtubeAppUrl = `youtube://watch?v=${videoId[1]}`;
-            const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId[1]}`;
-
-            if (isIOS()) {
-                location.replace(youtubeAppUrl);
-                setTimeout(() => {
-                    window.location.href = youtubeWebUrl;
-                }, 500);
-            } else if (isAndroid()) {
-                location.replace(`intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`);
-            } else {
-                window.open(youtubeWebUrl, '_blank');
-            }
-        }
-
-        // 외부 브라우저 또는 앱에서 열기
-        function openInExternalBrowser(url) {
-            if (!url) return;
-
-            if (url.includes('youtu.be') || url.includes('youtube.com')) {
-                openYouTubeApp(url);
-                return;
-            }
-
-            if (isKakaoTalkInApp()) {
-                if (isIOS()) {
-                    location.replace(url);
-                } else if (isAndroid()) {
-                    location.replace(`intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`);
-                }
-            } else {
-                window.open(url, '_blank');
-            }
-        }
-
-        // 공유된 링크가 있는 경우 리다이렉트
-        window.onload = function () {
-            const sharedUrl = getUrlParameter('url');
-            if (sharedUrl) {
-                openInExternalBrowser(sharedUrl);
-            }
-        };
     </script>
 </head>
 <body>
     <div class="container">
-        <h2>주소 입력 후 카카오 공유하기2</h2>
+        <h2>주소 입력 후 카카오 공유하기</h2>
         <input type="text" id="urlInput" placeholder="공유할 주소 입력">
         <button onclick="shareOnKakao()">카카오 공유하기</button>
     </div>

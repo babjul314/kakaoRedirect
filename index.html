@@ -149,16 +149,16 @@
                 return;
             }
 
-            const youtubeAppUrl = `youtube://${videoId[1]}`;
+            const youtubeAppUrl = `youtube://watch?v=${videoId[1]}`;
             const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId[1]}`;
 
             if (isIOS()) {
-                window.location.href = youtubeAppUrl;
+                location.replace(youtubeAppUrl);
                 setTimeout(() => {
                     window.location.href = youtubeWebUrl;
                 }, 500);
             } else if (isAndroid()) {
-                window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
+                location.replace(`intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`);
             } else {
                 window.open(youtubeWebUrl, '_blank');
             }
@@ -174,15 +174,11 @@
             }
 
             if (isKakaoTalkInApp()) {
-                setTimeout(() => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }, 100);
+                if (isIOS()) {
+                    location.replace(url);
+                } else if (isAndroid()) {
+                    location.replace(`intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`);
+                }
             } else {
                 window.open(url, '_blank');
             }

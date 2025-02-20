@@ -59,19 +59,6 @@
         // 카카오 API 초기화
         Kakao.init('9d2b87f36ba44bb72755d50675fce241');
 
-        // 현재 페이지에서 공유된 URL이 있으면 외부 브라우저에서 열기
-        window.onload = function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedUrl = urlParams.get('url');
-
-            if (sharedUrl) {
-                // 카카오톡 인앱 브라우저 감지 후 자동으로 외부 브라우저에서 열기
-                setTimeout(() => {
-                    window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(sharedUrl);
-                }, 100);
-            }
-        };
-
         // 메타데이터 가져오기
         async function fetchMetaData(url) {
             try {
@@ -115,8 +102,7 @@
             }
 
             const metaData = await fetchMetaData(inputUrl);
-            const redirectUrl = 'kakaotalk://web/openExternal?url='+encodeURIComponent(inputUrl);
-
+            const kakaoExternalUrl = `kakaotalk://web/openExternal?url=${encodeURIComponent(inputUrl)}`;
 
             Kakao.Share.sendDefault({
                 objectType: 'feed',
@@ -125,8 +111,8 @@
                     description: metaData.description,
                     imageUrl: metaData.imageUrl,
                     link: {
-                        mobileWebUrl: redirectUrl,
-                        webUrl: redirectUrl
+                        mobileWebUrl: kakaoExternalUrl,
+                        webUrl: kakaoExternalUrl
                     }
                 }
             });

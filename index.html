@@ -67,7 +67,7 @@
             return /android/i.test(navigator.userAgent);
         }
 
-        // 유튜브 링크 감지 후 앱에서 열기
+        // 유튜브 링크 감지 후 앱에서 열기 (브라우저 자동 닫기 추가)
         function openYouTubeApp(url) {
             const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([^&?/]+)/);
             if (!videoIdMatch) {
@@ -80,10 +80,18 @@
             const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
             if (isIOS()) {
-                setTimeout(() => { window.location.href = youtubeAppUrl; }, 1000);
+                // iOS → Safari에서 실행 후 유튜브 앱 실행 + 창 닫기
+                window.location.href = youtubeWebUrl;
+                setTimeout(() => {
+                    window.location.href = youtubeAppUrl;
+                    setTimeout(() => window.close(), 2000);
+                }, 1000);
             } else if (isAndroid()) {
+                // Android → Chrome에서 실행 후 유튜브 앱 실행 + 창 닫기
+                window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.android.chrome;scheme=https;end;`;
                 setTimeout(() => {
                     window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
+                    setTimeout(() => window.close(), 2000);
                 }, 1000);
             } else {
                 window.open(youtubeWebUrl, '_blank');

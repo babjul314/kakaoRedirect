@@ -141,18 +141,44 @@
             return urlParams.get(name);
         }
 
-        // 외부 브라우저 또는 앱에서 열기 (카카오톡 웹뷰 차단)
+        // 유튜브 링크를 유튜브 앱에서 열기
+        function openYouTubeApp(url) {
+            const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/);
+            if (!videoId) {
+                window.open(url, '_blank');
+                return;
+            }
+
+            const youtubeAppUrl = `youtube://${videoId[1]}`;
+            const youtubeWebUrl = `https://www.youtube.com/watch?v=${videoId[1]}`;
+
+            if (isIOS()) {
+                window.location.href = youtubeAppUrl;
+                setTimeout(() => {
+                    window.location.href = youtubeWebUrl;
+                }, 500);
+            } else if (isAndroid()) {
+                window.location.href = `intent://${youtubeWebUrl.replace(/^https?:\/\//, '')}#Intent;package=com.google.android.youtube;scheme=https;end;`;
+            } else {
+                window.open(youtubeWebUrl, '_blank');
+            }
+        }
+
+        // 외부 브라우저 또는 앱에서 열기
         function openInExternalBrowser(url) {
             if (!url) return;
 
+            if (url.includes('youtu.be') || url.includes('youtube.com')) {
+                openYouTubeApp(url);
+                return;
+            }
+
             if (isKakaoTalkInApp()) {
                 if (isIOS()) {
-                    // iOS - Safari에서 열기
                     setTimeout(() => {
                         window.open(url, '_blank', 'noopener,noreferrer');
                     }, 100);
                 } else if (isAndroid()) {
-                    // 안드로이드 - Chrome에서 열기
                     window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
                 }
             } else {

@@ -61,8 +61,17 @@
 
         // 카카오 인앱 브라우저 감지
         function isKakaoTalkInApp() {
-            const ua = navigator.userAgent.toLowerCase();
-            return ua.includes("kakaotalk");
+            return /kakaotalk/i.test(navigator.userAgent);
+        }
+
+        // iOS인지 확인
+        function isIOS() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent);
+        }
+
+        // 안드로이드인지 확인
+        function isAndroid() {
+            return /android/i.test(navigator.userAgent);
         }
 
         // URL에서 메타 데이터를 가져오는 함수
@@ -132,23 +141,22 @@
             return urlParams.get(name);
         }
 
-        // 외부 브라우저에서 열기
+        // 외부 브라우저 또는 앱에서 열기 (카카오톡 웹뷰 차단)
         function openInExternalBrowser(url) {
             if (!url) return;
 
             if (isKakaoTalkInApp()) {
-                // 카카오톡 인앱 브라우저에서 외부 브라우저로 리다이렉트
-                setTimeout(() => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }, 100);
+                if (isIOS()) {
+                    // iOS - Safari에서 열기
+                    setTimeout(() => {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    }, 100);
+                } else if (isAndroid()) {
+                    // 안드로이드 - Chrome에서 열기
+                    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end;`;
+                }
             } else {
-                window.location.href = url;
+                window.open(url, '_blank');
             }
         }
 
